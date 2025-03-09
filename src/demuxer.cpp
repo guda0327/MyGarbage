@@ -136,3 +136,7 @@ double MyDemuxer::p2d(AVPacket* pkg){
         return av_q2d(fileCtx->streams[audioStreamIdx]->time_base)*pkg->pts;
     }
 }
+
+void func(){
+    
+}
