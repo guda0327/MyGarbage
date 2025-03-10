@@ -92,6 +92,6 @@ void swsDeleter(SwsContext* swsPtr){
 }
 
 double getCurPts(SyncClock& clock){
-    double curTime = av_gettime_relative()/1e6;
+    double curTime = (double)av_gettime_relative()/1e6;
     return curTime + clock.diff;
 }

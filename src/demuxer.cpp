@@ -27,7 +27,17 @@ int MyDemuxer::run(){
                     break;
                 }
                 case demuxerTaskType::TYPE_SEEK:{
-
+                    auto seekTask = std::get<seekTaskST>(task.args);
+                    auto targetTS = calculateSeekTS(seekTask.time);
+                    int64_t minTS  = seekTask.type==demuxerTaskSeek::SEEK_FORWARD_DURATION ? 
+                                     targetTS - seekTask.time*AV_TIME_BASE + 2: 
+                                     INT64_MIN;
+                    int64_t maxTS  = seekTask.type==demuxerTaskSeek::SEEK_BACKWARD_DURATION ? 
+                                     targetTS + seekTask.time*AV_TIME_BASE - 2: 
+                                     INT64_MAX;
+                    avformat_seek_file(fileCtx.get(), -1, minTS, targetTS, maxTS, seekMethod);
+                    flushCodecCtxs();
+                    ++proxy.seekSerial;
                     break;
                 }
                 default:break;
@@ -36,6 +46,19 @@ int MyDemuxer::run(){
         
     }
     return 0;
+}
+
+int MyDemuxer::calculateSeekTS(int sec){
+    double ret = -1;
+    
+    proxy.systemCLKMtx.lock();
+    ret = getCurPts(proxy.systemCLK);
+    proxy.systemCLKMtx.unlock();
+
+    ret+=sec;
+    ret = std::max(ret, (double)fileCtx->start_time/AV_TIME_BASE);
+
+    return static_cast<int>(ret);
 }
 
 void MyDemuxer::openInput(const std::string& fileName){
@@ -141,6 +164,18 @@ double MyDemuxer::p2d(AVPacket* pkg){
     else{
         return av_q2d(fileCtx->streams[audioStreamIdx]->time_base)*pkg->pts;
     }
+}
+
+void MyDemuxer::flushCodecCtxs(){
+    proxy.aCodecMtx.lock();
+    proxy.vCodecMtx.lock();
+    auto audioCodecCtxPtr = proxy.getAudioParCtx();
+    auto videoCodecCtxPtr = proxy.getVideoParCtx();
+    avcodec_flush_buffers(*audioCodecCtxPtr);
+    avcodec_flush_buffers(*videoCodecCtxPtr);
+    proxy.aCodecMtx.unlock();
+    proxy.vCodecMtx.unlock();
+    return;
 }
 
 void func(){

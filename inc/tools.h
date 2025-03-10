@@ -37,15 +37,15 @@ void frameBufferDeleter(uint8_t** ptr);
 void windowDeleter(SDL_Window* windowPtr);
 void rendererDeleter(SDL_Renderer* rendererPtr);
 void textureDeleter(SDL_Texture* texturePtr);
-//弃用
-void frameDeleter(AVFrame* framePtr);
 
+void frameDeleter(AVFrame* framePtr);
 void frameSTDeleter(FrameST* frameSTPtr);
+
 void swsDeleter(SwsContext* swsPtr);
 void avFormatCtxDeleter(AVFormatContext* ctx);
 void avCodecCtxDeleter(AVCodecContext* ctx);
-//弃用
-void avPacketDeleter(AVPacket* pkg);
 
+void avPacketDeleter(AVPacket* pkg);
 void packetSTDeleter(PacketST* packetSTPtr);
+
 double getCurPts(SyncClock& clock);

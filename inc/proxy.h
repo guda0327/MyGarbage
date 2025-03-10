@@ -81,9 +81,6 @@ class ResourceProxy{
     std::shared_ptr<FrameST> peekVFrame();
     int addVFrame(std::shared_ptr<FrameST>&& frame);
     bool isVFrameQFull();
-    
-
-    
     //两个get函数都会对对应的queue加锁后以右值形式返回一个pkg指针
     //queue里边没东西会向demuxer提交demux任务
     //queue里边东西太少也会提交demux任务
@@ -119,6 +116,8 @@ class ResourceProxy{
     std::atomic<int> PROXY_EOF = 0;
     //全局serial
     std::atomic<int> seekSerial = 0;
+    //seek时要flush解码器，该标志位防止这一过程中其他线程进行解码操作
+    std::atomic<int> seeking = 0;
     
     std::mutex taskQMtx;
     std::mutex vCodecMtx;
@@ -156,5 +155,4 @@ class ResourceProxy{
 
     std::queue<std::shared_ptr<FrameST>> videoFrameQ;
     std::queue<std::shared_ptr<FrameST>> audioFrameQ;
-    // std::queue<AVPacket*> audioPkgQ;
 };

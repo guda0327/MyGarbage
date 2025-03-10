@@ -24,15 +24,18 @@ class MyDemuxer{
     MyDemuxer(ResourceProxy &resrc);
     void openInput(const std::string& fileName);
     int run();
+    int calculateSeekTS(int sec);
     std::atomic<bool> goOn;
     private:
     double videoDuration;
     double audioDuration;
     bool STOP;
-    int videoStreamIdx;
-    int audioStreamIdx;
+    int seekMethod = AVSEEK_FLAG_BACKWARD;
+    int videoStreamIdx = 0;
+    int audioStreamIdx = 1;
     int demux(int sec);
     double p2d(AVPacket* pkg);
+    void flushCodecCtxs();
     std::unique_ptr<AVFormatContext, void(*)(AVFormatContext*)> fileCtx;
     std::unique_ptr<PacketST, void(*)(PacketST*)> packet;
     ResourceProxy &proxy;
