@@ -78,8 +78,8 @@ class ResourceProxy{
     int addAPkg(std::unique_ptr<AVPacket, void(*)(AVPacket*)>&& aPkg);
 
     void popVFrameQ();
-    std::shared_ptr<AVFrame> peekVFrame();
-    int addVFrame(std::shared_ptr<AVFrame>&& frame);
+    std::shared_ptr<frameST> peekVFrame();
+    int addVFrame(std::shared_ptr<frameST>&& frame);
     bool isVFrameQFull();
     
 
@@ -91,8 +91,8 @@ class ResourceProxy{
     std::unique_ptr<AVPacket, void(*)(AVPacket*)> getAPkg();
 
     void popAFrameQ();
-    std::shared_ptr<AVFrame> peekAFrame();
-    int addAFrame(std::shared_ptr<AVFrame>&& frame);
+    std::shared_ptr<frameST> peekAFrame();
+    int addAFrame(std::shared_ptr<frameST>&& frame);
     bool isAFrameQFull();
     // AVPacket* getAPkg();
     SyncClock systemCLK;
@@ -152,7 +152,7 @@ class ResourceProxy{
     std::queue<std::unique_ptr<AVPacket, void(*)(AVPacket*)>> videoPkgQ;
     std::queue<std::unique_ptr<AVPacket, void(*)(AVPacket*)>> audioPkgQ;
 
-    std::queue<std::shared_ptr<AVFrame>> videoFrameQ;
-    std::queue<std::shared_ptr<AVFrame>> audioFrameQ;
+    std::queue<std::shared_ptr<frameST>> videoFrameQ;
+    std::queue<std::shared_ptr<frameST>> audioFrameQ;
     // std::queue<AVPacket*> audioPkgQ;
 };

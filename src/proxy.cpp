@@ -21,7 +21,7 @@ void ResourceProxy::popVFrameQ(){
     }
     videoFrameQMtx.unlock();
 }
-std::shared_ptr<AVFrame> ResourceProxy::peekVFrame(){
+std::shared_ptr<frameST> ResourceProxy::peekVFrame(){
     videoFrameQMtx.lock();
     if(!videoFrameQ.empty()){
         auto ret = videoFrameQ.front();
@@ -30,11 +30,11 @@ std::shared_ptr<AVFrame> ResourceProxy::peekVFrame(){
     }
     else{
         videoFrameQMtx.unlock();
-        return std::unique_ptr<AVFrame, void(*)(AVFrame*)>(nullptr, frameDeleter);
+        return std::unique_ptr<frameST, void(*)(frameST*)>(nullptr, frameSTDeleter);
     }
 }
 
-int ResourceProxy::addVFrame(std::shared_ptr<AVFrame>&& frame){
+int ResourceProxy::addVFrame(std::shared_ptr<frameST>&& frame){
     videoFrameQMtx.lock();
     videoFrameQ.emplace(frame);
     videoFrameQMtx.unlock();
@@ -51,7 +51,7 @@ bool ResourceProxy::isVFrameQFull(){
     return false;
 }
 
-int ResourceProxy::addAFrame(std::shared_ptr<AVFrame>&& frame){
+int ResourceProxy::addAFrame(std::shared_ptr<frameST>&& frame){
     audioFrameQMtx.lock();
     audioFrameQ.emplace(move(frame));
     audioFrameQMtx.unlock();
@@ -138,7 +138,7 @@ void ResourceProxy::popAFrameQ(){
     audioFrameQMtx.unlock();
 }
 
-std::shared_ptr<AVFrame> ResourceProxy::peekAFrame(){
+std::shared_ptr<frameST> ResourceProxy::peekAFrame(){
     audioFrameQMtx.lock();
     if(!audioFrameQ.empty()){
         auto ret = audioFrameQ.front();
@@ -147,7 +147,7 @@ std::shared_ptr<AVFrame> ResourceProxy::peekAFrame(){
     }
     else{
         audioFrameQMtx.unlock();
-        return std::unique_ptr<AVFrame, void(*)(AVFrame*)>(nullptr, frameDeleter);
+        return std::unique_ptr<frameST, void(*)(frameST*)>(nullptr, frameSTDeleter);
     }
 }
 

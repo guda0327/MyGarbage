@@ -14,6 +14,7 @@ extern "C"{
 
 class frameST{
     public:
+    frameST():frame(nullptr), serial(-1){}
     AVFrame* frame;
     int serial;
 };
