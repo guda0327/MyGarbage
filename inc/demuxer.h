@@ -34,7 +34,7 @@ class MyDemuxer{
     int demux(int sec);
     double p2d(AVPacket* pkg);
     std::unique_ptr<AVFormatContext, void(*)(AVFormatContext*)> fileCtx;
-    std::unique_ptr<AVPacket, void(*)(AVPacket*)> pkg;
+    std::unique_ptr<PacketST, void(*)(PacketST*)> packet;
     ResourceProxy &proxy;
 };
 

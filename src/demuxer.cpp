@@ -3,9 +3,9 @@
 
 MyDemuxer::MyDemuxer(ResourceProxy &resrc):
                      proxy(resrc),
-                     pkg(nullptr, avPacketDeleter),
+                     packet(nullptr, packetSTDeleter),
                      fileCtx(nullptr, avFormatCtxDeleter){
-    pkg.reset(av_packet_alloc());
+    packet.reset(new PacketST(av_packet_alloc(), static_cast<int>(proxy.seekSerial)));
     fileCtx.reset(avformat_alloc_context());
     int videoStreamIdx = 0;
     int audioStreamIdx = 1;
@@ -107,24 +107,26 @@ int MyDemuxer::demux(int sec){
     printf("the target pts is %f \n\n", tarPts);
     int accomplished = 0;
     //accomplished低两位代表音，视频是否读取到了tarpts
+    if(!packet) std::runtime_error("demuxer packet is nullptr");
     while(!proxy.EXIT && accomplished!=3){
-        auto ret = av_read_frame(fileCtx.get(), pkg.get());
-        auto pkgPts = p2d(pkg.get());
+        auto pkg = packet->pkg;
+        auto ret = av_read_frame(fileCtx.get(), pkg);
+        auto pkgPts = p2d(pkg);
         if(ret<0) return -1;
         if(pkgPts>=tarPts){
             if(pkg->stream_index==videoStreamIdx) accomplished|=(1<<0);
             else if(pkg->stream_index==audioStreamIdx) accomplished|=(1<<1);
         }
         if(pkg->stream_index==videoStreamIdx){
-            proxy.addVPkg(std::move(pkg));
-            pkg.reset(av_packet_alloc());
+            proxy.addVPkg(std::move(packet));
+            packet.reset(new PacketST(av_packet_alloc(), static_cast<int>(proxy.seekSerial)));
         }
         if(pkg->stream_index==audioStreamIdx){
-            proxy.addAPkg(std::move(pkg));
-            pkg.reset(av_packet_alloc());
+            proxy.addAPkg(std::move(packet));
+            packet.reset(new PacketST(av_packet_alloc(), static_cast<int>(proxy.seekSerial)));
         }
         else{
-            pkg.reset(av_packet_alloc());
+            packet.reset(new PacketST(av_packet_alloc(), static_cast<int>(proxy.seekSerial)));
         }
     }
     printf("end this time demux\n\n");
