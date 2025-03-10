@@ -80,6 +80,10 @@ int MyVideo::init(){
 int MyVideo::videoRefresh(){
     while(!proxy.EXIT){
         nextFrameST = proxy.peekVFrame();
+        if(!nextFrameST){
+            std::cout<<"video lacking frame\n";
+            return -1;
+        }
         auto lastFrameDur = calculateDur(nextFrameST->frame);
         auto delay = calculateDelay(lastFrameDur);
         double curTime = av_gettime_relative()/1e6;
