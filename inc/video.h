@@ -32,21 +32,19 @@ class MyVideo{
     int init();
     int videoRefresh();
     private:
-    void videoDisplay(std::shared_ptr<AVFrame>& frame);
-    void decodeFrame(std::unique_ptr<AVPacket, void(*)(AVPacket*)> pkg);
+    void videoDisplay(AVFrame* frame);
+    void decodeFrame(std::unique_ptr<PacketST, void(*)(PacketST*)> packet);
     void processEvents();
     void processWindowChangeEvent();
     void setDisplayRect(int x, int y, int w, int h);
 
-    double calculateDur(std::shared_ptr<AVFrame>& frame);
+    double calculateDur(AVFrame* frame);
     double calculateDelay(double lastDur);
     double syncThreshHold = 0.1;
     SyncClock videoCLK;
 
     SDL_Event event;
     SDL_Rect displayRect;
-    std::atomic<int> quitFlag = 0;
-    std::atomic<int> pauseFlag = 0;
     double ratio = 1;
     ResourceProxy& proxy;
     AVCodecContext* videoCodecCtx;
@@ -54,10 +52,10 @@ class MyVideo{
     std::unique_ptr<SDL_Texture, void(*)(SDL_Texture*)> texture;
     std::unique_ptr<SDL_Window, void(*)(SDL_Window*)> displayWindow;
     std::unique_ptr<SDL_Renderer, void(*)(SDL_Renderer*)> renderer;
-    std::unique_ptr<AVFrame, void(*)(AVFrame*)> decodedFrame;
-    std::shared_ptr<AVFrame> displayFrame;
-    std::shared_ptr<AVFrame> lastFrame;
-    std::shared_ptr<AVFrame> nextFrame;
+    std::unique_ptr<FrameST, void(*)(FrameST*)> decodedFrameST;
+    std::unique_ptr<AVFrame, void(*)(AVFrame*)> displayFrame;
+    std::shared_ptr<FrameST> lastFrameST;
+    std::shared_ptr<FrameST> nextFrameST;
     // std::unique_ptr<AVFrame, void(*)(AVFrame*)> displayFrame;
     std::unique_ptr<SwsContext, void(*)(SwsContext*)> swsCtx;
 
