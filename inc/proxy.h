@@ -74,12 +74,12 @@ class ResourceProxy{
     double audioTimeBase;
     double videoTimeBase;
 
-    int addVPkg(std::unique_ptr<AVPacket, void(*)(AVPacket*)>&& vPkg);
-    int addAPkg(std::unique_ptr<AVPacket, void(*)(AVPacket*)>&& aPkg);
+    int addVPkg(std::unique_ptr<PacketST, void(*)(PacketST*)>&& vPkg);
+    int addAPkg(std::unique_ptr<PacketST, void(*)(PacketST*)>&& aPkg);
 
     void popVFrameQ();
-    std::shared_ptr<frameST> peekVFrame();
-    int addVFrame(std::shared_ptr<frameST>&& frame);
+    std::shared_ptr<FrameST> peekVFrame();
+    int addVFrame(std::shared_ptr<FrameST>&& frame);
     bool isVFrameQFull();
     
 
@@ -87,12 +87,12 @@ class ResourceProxy{
     //两个get函数都会对对应的queue加锁后以右值形式返回一个pkg指针
     //queue里边没东西会向demuxer提交demux任务
     //queue里边东西太少也会提交demux任务
-    std::unique_ptr<AVPacket, void(*)(AVPacket*)> getVPkg();
-    std::unique_ptr<AVPacket, void(*)(AVPacket*)> getAPkg();
+    std::unique_ptr<PacketST, void(*)(PacketST*)> getVPkg();
+    std::unique_ptr<PacketST, void(*)(PacketST*)> getAPkg();
 
     void popAFrameQ();
-    std::shared_ptr<frameST> peekAFrame();
-    int addAFrame(std::shared_ptr<frameST>&& frame);
+    std::shared_ptr<FrameST> peekAFrame();
+    int addAFrame(std::shared_ptr<FrameST>&& frame);
     bool isAFrameQFull();
     // AVPacket* getAPkg();
     SyncClock systemCLK;
@@ -117,6 +117,8 @@ class ResourceProxy{
     std::atomic<int> EXIT = 0;
     //av_read_frame读完了
     std::atomic<int> PROXY_EOF = 0;
+    //全局serial
+    std::atomic<int> seekSerial = 0;
     
     std::mutex taskQMtx;
     std::mutex vCodecMtx;
@@ -149,10 +151,10 @@ class ResourceProxy{
     std::shared_ptr<AVCodecContext*> audioCodecCtx;
 
     std::queue<taskST> demuxerTasks;
-    std::queue<std::unique_ptr<AVPacket, void(*)(AVPacket*)>> videoPkgQ;
-    std::queue<std::unique_ptr<AVPacket, void(*)(AVPacket*)>> audioPkgQ;
+    std::queue<std::unique_ptr<PacketST, void(*)(PacketST*)>> videoPkgQ;
+    std::queue<std::unique_ptr<PacketST, void(*)(PacketST*)>> audioPkgQ;
 
-    std::queue<std::shared_ptr<frameST>> videoFrameQ;
-    std::queue<std::shared_ptr<frameST>> audioFrameQ;
+    std::queue<std::shared_ptr<FrameST>> videoFrameQ;
+    std::queue<std::shared_ptr<FrameST>> audioFrameQ;
     // std::queue<AVPacket*> audioPkgQ;
 };

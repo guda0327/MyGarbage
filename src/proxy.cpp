@@ -1,13 +1,13 @@
 #include "../inc/proxy.h"
 
-int ResourceProxy::addVPkg(std::unique_ptr<AVPacket, void(*)(AVPacket*)>&& vPkg){
+int ResourceProxy::addVPkg(std::unique_ptr<PacketST, void(*)(PacketST*)>&& vPkg){
     videoPkgQMtx.lock();
     videoPkgQ.emplace(std::move(vPkg));
     videoPkgQMtx.unlock();
     return 0;
 }
 
-int ResourceProxy::addAPkg(std::unique_ptr<AVPacket, void(*)(AVPacket*)>&& aPkg){
+int ResourceProxy::addAPkg(std::unique_ptr<PacketST, void(*)(PacketST*)>&& aPkg){
     audioPkgQMtx.lock();
     audioPkgQ.emplace(move(aPkg));
     audioPkgQMtx.unlock();
@@ -21,7 +21,7 @@ void ResourceProxy::popVFrameQ(){
     }
     videoFrameQMtx.unlock();
 }
-std::shared_ptr<frameST> ResourceProxy::peekVFrame(){
+std::shared_ptr<FrameST> ResourceProxy::peekVFrame(){
     videoFrameQMtx.lock();
     if(!videoFrameQ.empty()){
         auto ret = videoFrameQ.front();
@@ -30,11 +30,11 @@ std::shared_ptr<frameST> ResourceProxy::peekVFrame(){
     }
     else{
         videoFrameQMtx.unlock();
-        return std::unique_ptr<frameST, void(*)(frameST*)>(nullptr, frameSTDeleter);
+        return std::unique_ptr<FrameST, void(*)(FrameST*)>(nullptr, frameSTDeleter);
     }
 }
 
-int ResourceProxy::addVFrame(std::shared_ptr<frameST>&& frame){
+int ResourceProxy::addVFrame(std::shared_ptr<FrameST>&& frame){
     videoFrameQMtx.lock();
     videoFrameQ.emplace(frame);
     videoFrameQMtx.unlock();
@@ -51,14 +51,14 @@ bool ResourceProxy::isVFrameQFull(){
     return false;
 }
 
-int ResourceProxy::addAFrame(std::shared_ptr<frameST>&& frame){
+int ResourceProxy::addAFrame(std::shared_ptr<FrameST>&& frame){
     audioFrameQMtx.lock();
     audioFrameQ.emplace(move(frame));
     audioFrameQMtx.unlock();
     return 0;
 }
 
-std::unique_ptr<AVPacket, void(*)(AVPacket*)> ResourceProxy::getVPkg(){
+std::unique_ptr<PacketST, void(*)(PacketST*)> ResourceProxy::getVPkg(){
     videoPkgQMtx.lock();
     if(videoPkgQ.size()==0){
         videoPkgQMtx.unlock();
@@ -68,7 +68,7 @@ std::unique_ptr<AVPacket, void(*)(AVPacket*)> ResourceProxy::getVPkg(){
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             std::this_thread::yield();
             if(EXIT || STOP){
-                return std::unique_ptr<AVPacket, void(*)(AVPacket*)>(nullptr, avPacketDeleter);
+                return std::unique_ptr<PacketST, void(*)(PacketST*)>(nullptr, packetSTDeleter);
             }
         }
         videoPkgQMtx.lock();
@@ -94,7 +94,7 @@ std::unique_ptr<AVPacket, void(*)(AVPacket*)> ResourceProxy::getVPkg(){
     }
 }
 
-std::unique_ptr<AVPacket, void(*)(AVPacket*)> ResourceProxy::getAPkg(){
+std::unique_ptr<PacketST, void(*)(PacketST*)> ResourceProxy::getAPkg(){
     audioPkgQMtx.lock();
     // printf("there is %d pkgs in audioPkgQ\n\n", audioPkgQ.size());
     if(audioPkgQ.size()==0){
@@ -104,7 +104,7 @@ std::unique_ptr<AVPacket, void(*)(AVPacket*)> ResourceProxy::getAPkg(){
             commitTask(demuxerTaskType::TYPE_DEMUX, demuxTaskST{});
             std::this_thread::yield();
             if(EXIT || STOP){
-                return std::unique_ptr<AVPacket, void(*)(AVPacket*)>(nullptr, avPacketDeleter);
+                return std::unique_ptr<PacketST, void(*)(PacketST*)>(nullptr, packetSTDeleter);
             }
         }
         audioPkgQMtx.lock();
@@ -138,7 +138,7 @@ void ResourceProxy::popAFrameQ(){
     audioFrameQMtx.unlock();
 }
 
-std::shared_ptr<frameST> ResourceProxy::peekAFrame(){
+std::shared_ptr<FrameST> ResourceProxy::peekAFrame(){
     audioFrameQMtx.lock();
     if(!audioFrameQ.empty()){
         auto ret = audioFrameQ.front();
@@ -147,7 +147,7 @@ std::shared_ptr<frameST> ResourceProxy::peekAFrame(){
     }
     else{
         audioFrameQMtx.unlock();
-        return std::unique_ptr<frameST, void(*)(frameST*)>(nullptr, frameSTDeleter);
+        return std::unique_ptr<FrameST, void(*)(FrameST*)>(nullptr, frameSTDeleter);
     }
 }
 

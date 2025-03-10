@@ -45,6 +45,14 @@ void avPacketDeleter(AVPacket* pkg){
     }
 }
 
+void packetSTDeleter(PacketST* packetSTPtr){
+    if(packetSTPtr){
+        if(packetSTPtr->pkg){
+            av_packet_free(&packetSTPtr->pkg);
+        }
+    }
+}
+
 void windowDeleter(SDL_Window* windowPtr){
     if(windowPtr){
         SDL_DestroyWindow(windowPtr);
@@ -69,7 +77,7 @@ void frameDeleter(AVFrame* framePtr){
     }
 }
 
-void frameSTDeleter(frameST* frameSTPtr){
+void frameSTDeleter(FrameST* frameSTPtr){
     if(frameSTPtr){
         if(frameSTPtr->frame){
             av_frame_free(&frameSTPtr->frame);

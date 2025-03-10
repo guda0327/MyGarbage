@@ -12,10 +12,21 @@ extern "C"{
     #include <SDL2/SDL.h>
 }
 
-class frameST{
+class FrameST{
     public:
-    frameST():frame(nullptr), serial(-1){}
+    FrameST():frame(nullptr), serial(-1){}
+    FrameST(int s):frame(nullptr), serial(s){}
+    FrameST(AVFrame* ptr, int s):frame(ptr), serial(s){}
     AVFrame* frame;
+    int serial;
+};
+
+class PacketST{
+    public:
+    PacketST():pkg(nullptr), serial(-1){}
+    PacketST(int s):pkg(nullptr), serial(s){}
+    PacketST(AVPacket* ptr, int s):pkg(ptr), serial(s){}
+    AVPacket* pkg;
     int serial;
 };
 
@@ -29,9 +40,12 @@ void textureDeleter(SDL_Texture* texturePtr);
 //弃用
 void frameDeleter(AVFrame* framePtr);
 
-void frameSTDeleter(frameST* frameSTPtr);
+void frameSTDeleter(FrameST* frameSTPtr);
 void swsDeleter(SwsContext* swsPtr);
 void avFormatCtxDeleter(AVFormatContext* ctx);
 void avCodecCtxDeleter(AVCodecContext* ctx);
+//弃用
 void avPacketDeleter(AVPacket* pkg);
+
+void packetSTDeleter(PacketST* packetSTPtr);
 double getCurPts(SyncClock& clock);
