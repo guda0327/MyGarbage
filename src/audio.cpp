@@ -3,12 +3,12 @@
 
 MyAudio::MyAudio(ResourceProxy& resrc):swrCtx(nullptr, swrCtxDeleter),
                                        audioDevice(nullptr, audioDeviceDeleter),
-                                       decodedFrame(nullptr, frameDeleter),
+                                       decodedFrameST(nullptr, frameSTDeleter),
                                        channelLayout(nullptr, channelLayoutDeleter),
                                        proxy(resrc){
     setSpec(desiredSpec);
     swrCtx.reset(swr_alloc());
-    decodedFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), frameDeleter);
+    decodedFrameST.reset(new FrameST(av_frame_alloc(), static_cast<int>(proxy.seekSerial)));
 }
 
 int MyAudio::run(){
@@ -73,19 +73,22 @@ FrameBuffer::FrameBuffer(){
     idx = 0;
 }
 
-void MyAudio::decodeFrame(std::unique_ptr<AVPacket, void(*)(AVPacket*)>&& pkg){
-    if(!pkg || !audioCodecCtx) return;
-    if((avcodec_send_packet(audioCodecCtx, pkg.get())==0) && !proxy.EXIT){
-        while((avcodec_receive_frame(audioCodecCtx, decodedFrame.get())==0) && !proxy.EXIT){
-            proxy.addAFrame(move(decodedFrame));
-            decodedFrame = std::shared_ptr<AVFrame>(av_frame_alloc(), frameDeleter);
+void MyAudio::decodeFrame(std::unique_ptr<PacketST, void(*)(PacketST*)>&& packet){
+    if(!packet || !audioCodecCtx) return;
+    if(!packet->pkg || packet->serial!=proxy.seekSerial) return;
+    if((avcodec_send_packet(audioCodecCtx, packet->pkg)==0) && !proxy.EXIT){
+        while((avcodec_receive_frame(audioCodecCtx, decodedFrameST->frame)==0) && !proxy.EXIT){
+            proxy.addAFrame(move(decodedFrameST));
+            decodedFrameST.reset(new FrameST(av_frame_alloc(), static_cast<int>(proxy.seekSerial)));
         }
     }
     return;
 }
 
 int MyAudio::editFrame(){
-    auto frame = proxy.peekAFrame();
+    auto frameST = proxy.peekAFrame();
+    if(!frameST) return -1;
+    auto frame = frameST->frame;
     if(!frame) return -1;
     int dataSize = av_samples_get_buffer_size(nullptr, 
                                               frame->ch_layout.nb_channels, 

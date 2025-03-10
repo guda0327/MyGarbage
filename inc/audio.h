@@ -40,7 +40,7 @@ class MyAudio{
     //这个函数逻辑暂时是写死了，有需要可以加参数改
     void setSpec(SDL_AudioSpec& spec);
     //解码，并写入缓存
-    void decodeFrame(std::unique_ptr<AVPacket, void(*)(AVPacket*)>&& pkg);
+    void decodeFrame(std::unique_ptr<PacketST, void(*)(PacketST*)>&& packet);
     //对frame做处理，主要是重采样
     int editFrame();
 
@@ -53,7 +53,7 @@ class MyAudio{
     double bytesPerSec;
     FrameBuffer resampledBuffer;
     AVCodecContext* audioCodecCtx;
-    std::shared_ptr<AVFrame> decodedFrame;
+    std::shared_ptr<FrameST> decodedFrameST;
     std::unique_ptr<SwrContext, void(*)(SwrContext*)> swrCtx;
     std::unique_ptr<SDL_AudioDeviceID, void(*)(SDL_AudioDeviceID*)> audioDevice;
     std::unique_ptr<AVChannelLayout, void(*)(AVChannelLayout* ptr)> channelLayout;
