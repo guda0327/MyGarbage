@@ -12,6 +12,11 @@ extern "C"{
     #include <SDL2/SDL.h>
 }
 
+class frameST{
+    public:
+    AVFrame* frame;
+    int serial;
+};
 
 void swrCtxDeleter(SwrContext* ptr);
 void audioDeviceDeleter(SDL_AudioDeviceID* id);
@@ -20,7 +25,10 @@ void frameBufferDeleter(uint8_t** ptr);
 void windowDeleter(SDL_Window* windowPtr);
 void rendererDeleter(SDL_Renderer* rendererPtr);
 void textureDeleter(SDL_Texture* texturePtr);
+//弃用
 void frameDeleter(AVFrame* framePtr);
+
+void frameSTDeleter(frameST* frameSTPtr);
 void swsDeleter(SwsContext* swsPtr);
 void avFormatCtxDeleter(AVFormatContext* ctx);
 void avCodecCtxDeleter(AVCodecContext* ctx);

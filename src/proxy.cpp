@@ -1,7 +1,5 @@
 #include "../inc/proxy.h"
 
-//ResourceProxy::
-
 int ResourceProxy::addVPkg(std::unique_ptr<AVPacket, void(*)(AVPacket*)>&& vPkg){
     videoPkgQMtx.lock();
     videoPkgQ.emplace(std::move(vPkg));

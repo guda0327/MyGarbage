@@ -69,6 +69,14 @@ void frameDeleter(AVFrame* framePtr){
     }
 }
 
+void frameSTDeleter(frameST* frameSTPtr){
+    if(frameSTPtr){
+        if(frameSTPtr->frame){
+            av_frame_free(&frameSTPtr->frame);
+        }
+    }
+}
+
 void swsDeleter(SwsContext* swsPtr){
     if(swsPtr){
         sws_freeContext(swsPtr);
