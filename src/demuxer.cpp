@@ -21,7 +21,9 @@ int MyDemuxer::run(){
             switch(task.ty){
                 case demuxerTaskType::TYPE_DEMUX:{
                     auto ret = demux(3);
-                    if(ret==-1) break;
+                    if(ret==-1){
+                        proxy.PROXY_EOF = 1;
+                    }
                     break;
                 }
                 case demuxerTaskType::TYPE_SEEK:{
@@ -96,6 +98,8 @@ void MyDemuxer::openInput(const std::string& fileName){
  * 
  */
 int MyDemuxer::demux(int sec){
+    //如果当前文件读完了，这次demux调用无效
+    if(proxy.PROXY_EOF) return -1;
     auto curPts = proxy.systemCLK.curPts;
     auto tarPts = curPts + sec;
     tarPts = std::min(tarPts, proxy.maxDuration);

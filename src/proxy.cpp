@@ -69,7 +69,7 @@ std::unique_ptr<AVPacket, void(*)(AVPacket*)> ResourceProxy::getVPkg(){
             commitTask(demuxerTaskType::TYPE_DEMUX, demuxTaskST{});
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             std::this_thread::yield();
-            if(EXIT){
+            if(EXIT || STOP){
                 return std::unique_ptr<AVPacket, void(*)(AVPacket*)>(nullptr, avPacketDeleter);
             }
         }
@@ -77,7 +77,7 @@ std::unique_ptr<AVPacket, void(*)(AVPacket*)> ResourceProxy::getVPkg(){
         //与else的逻辑一样，区别在于这里要加一次锁
         auto ret = move(videoPkgQ.front());
         videoPkgQ.pop();
-        if(videoPkgQ.size()<20){
+        if(videoPkgQ.size()<20 && !PROXY_EOF){
             printf("video is asking for demux\n\n");
             commitTask(demuxerTaskType::TYPE_DEMUX, demuxTaskST{});
         }
@@ -87,7 +87,7 @@ std::unique_ptr<AVPacket, void(*)(AVPacket*)> ResourceProxy::getVPkg(){
     else{
         auto ret = move(videoPkgQ.front());
         videoPkgQ.pop();
-        if(videoPkgQ.size()<20){
+        if(videoPkgQ.size()<20 && !PROXY_EOF){
             printf("video is asking for demux\n\n");
             commitTask(demuxerTaskType::TYPE_DEMUX, demuxTaskST{});
         }
@@ -105,7 +105,7 @@ std::unique_ptr<AVPacket, void(*)(AVPacket*)> ResourceProxy::getAPkg(){
             printf("audio is asking for demux\n\n");
             commitTask(demuxerTaskType::TYPE_DEMUX, demuxTaskST{});
             std::this_thread::yield();
-            if(EXIT){
+            if(EXIT || STOP){
                 return std::unique_ptr<AVPacket, void(*)(AVPacket*)>(nullptr, avPacketDeleter);
             }
         }
@@ -113,7 +113,7 @@ std::unique_ptr<AVPacket, void(*)(AVPacket*)> ResourceProxy::getAPkg(){
         //与else的逻辑一样，区别在于这里要加一次锁
         auto ret = move(audioPkgQ.front());
         audioPkgQ.pop();
-        if(audioPkgQ.size()<20){
+        if(audioPkgQ.size()<20 && !PROXY_EOF){
             printf("audio is asking for demux\n\n");
             commitTask(demuxerTaskType::TYPE_DEMUX, demuxTaskST{});
         }
@@ -123,7 +123,7 @@ std::unique_ptr<AVPacket, void(*)(AVPacket*)> ResourceProxy::getAPkg(){
     else{
         auto ret = move(audioPkgQ.front());
         audioPkgQ.pop();
-        if(audioPkgQ.size()<20){
+        if(audioPkgQ.size()<20 && !PROXY_EOF){
             printf("audio is asking for demux\n\n");
             commitTask(demuxerTaskType::TYPE_DEMUX, demuxTaskST{});
         }

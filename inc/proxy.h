@@ -115,6 +115,8 @@ class ResourceProxy{
     std::atomic<int> STOP = 0;
     //退出
     std::atomic<int> EXIT = 0;
+    //av_read_frame读完了
+    std::atomic<int> PROXY_EOF = 0;
     
     std::mutex taskQMtx;
     std::mutex vCodecMtx;
