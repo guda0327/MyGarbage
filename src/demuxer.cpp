@@ -27,17 +27,27 @@ int MyDemuxer::run(){
                     break;
                 }
                 case demuxerTaskType::TYPE_SEEK:{
+                    std::cout<<"there is seek request\n";
                     auto seekTask = std::get<seekTaskST>(task.args);
+                    // seekTask.time = 10;
                     auto targetTS = calculateSeekTS(seekTask.time);
+                    //这俩参数，加上之后会导致seek完之后两个流的位置不一致
+                    //并且seek的时间也不对
+                    //我想不通原因
+                    //但是我决定弃用这俩玩意儿
                     int64_t minTS  = seekTask.type==demuxerTaskSeek::SEEK_FORWARD_DURATION ? 
                                      targetTS - seekTask.time*AV_TIME_BASE + 2: 
                                      INT64_MIN;
                     int64_t maxTS  = seekTask.type==demuxerTaskSeek::SEEK_BACKWARD_DURATION ? 
                                      targetTS + seekTask.time*AV_TIME_BASE - 2: 
                                      INT64_MAX;
-                    avformat_seek_file(fileCtx.get(), -1, minTS, targetTS, maxTS, seekMethod);
+                    auto ret = avformat_seek_file(fileCtx.get(), -1, INT64_MIN, targetTS, INT64_MAX, seekMethod);
                     flushCodecCtxs();
+                    proxy.clearAPkgQ();
+                    proxy.clearVPkgQ();
+                    proxy.systemCLK.updateCur((double)targetTS/AV_TIME_BASE);
                     ++proxy.seekSerial;
+                    proxy.demuxCv.notify_one();
                     break;
                 }
                 default:break;
@@ -49,14 +59,14 @@ int MyDemuxer::run(){
 }
 
 int MyDemuxer::calculateSeekTS(int sec){
-    double ret = -1;
+    int ret = -1;
     
     proxy.systemCLKMtx.lock();
-    ret = getCurPts(proxy.systemCLK);
+    ret = getCurPts(proxy.systemCLK) * AV_TIME_BASE;
     proxy.systemCLKMtx.unlock();
 
-    ret+=sec;
-    ret = std::max(ret, (double)fileCtx->start_time/AV_TIME_BASE);
+    ret += sec * AV_TIME_BASE;
+    ret = std::max(ret, static_cast<int>(fileCtx->start_time));
 
     return static_cast<int>(ret);
 }
@@ -126,8 +136,8 @@ int MyDemuxer::demux(int sec){
     auto curPts = proxy.systemCLK.curPts;
     auto tarPts = curPts + sec;
     tarPts = std::min(tarPts, proxy.maxDuration);
-    printf("the system clock is %f \n\n", tarPts);
-    printf("the target pts is %f \n\n", tarPts);
+    // printf("the system clock is %f \n\n", tarPts);
+    // printf("the target pts is %f \n\n", tarPts);
     int accomplished = 0;
     //accomplished低两位代表音，视频是否读取到了tarpts
     if(!packet) std::runtime_error("demuxer packet is nullptr");

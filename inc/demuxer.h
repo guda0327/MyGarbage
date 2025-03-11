@@ -30,7 +30,7 @@ class MyDemuxer{
     double videoDuration;
     double audioDuration;
     bool STOP;
-    int seekMethod = AVSEEK_FLAG_BACKWARD;
+    int seekMethod = 0;
     int videoStreamIdx = 0;
     int audioStreamIdx = 1;
     int demux(int sec);

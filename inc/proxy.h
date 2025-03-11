@@ -73,7 +73,8 @@ class ResourceProxy{
     //音、视频流的time_base(double 格式)
     double audioTimeBase;
     double videoTimeBase;
-
+    void clearAPkgQ();
+    void clearVPkgQ();
     int addVPkg(std::unique_ptr<PacketST, void(*)(PacketST*)>&& vPkg);
     int addAPkg(std::unique_ptr<PacketST, void(*)(PacketST*)>&& aPkg);
 

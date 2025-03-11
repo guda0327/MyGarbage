@@ -1,5 +1,21 @@
 #include "../inc/proxy.h"
 
+void ResourceProxy::clearAPkgQ(){
+    audioPkgQMtx.lock();
+    while(!audioPkgQ.empty()){
+        audioPkgQ.pop();
+    }
+    audioPkgQMtx.unlock();
+}
+
+void ResourceProxy::clearVPkgQ(){
+    videoPkgQMtx.lock();
+    while(!videoPkgQ.empty()){
+        videoPkgQ.pop();
+    }
+    videoPkgQMtx.unlock();
+}
+
 int ResourceProxy::addVPkg(std::unique_ptr<PacketST, void(*)(PacketST*)>&& vPkg){
     videoPkgQMtx.lock();
     videoPkgQ.emplace(std::move(vPkg));
@@ -195,7 +211,7 @@ taskST ResourceProxy::getTask(){
     auto ret = demuxerTasks.front();
     demuxerTasks.pop();
     taskQMtx.unlock();
-    return std::move(ret);
+    return ret;
 }
 
 void ResourceProxy::waitForDemux(){

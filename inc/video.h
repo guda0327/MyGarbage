@@ -38,7 +38,7 @@ class MyVideo{
     void processWindowChangeEvent();
     void setDisplayRect(int x, int y, int w, int h);
 
-    double calculateDur(AVFrame* frame);
+    double calculateDur(std::shared_ptr<FrameST>& frameST);
     double calculateDelay(double lastDur);
     double syncThreshHold = 0.1;
     SyncClock videoCLK;

@@ -17,7 +17,7 @@ void videoThFunc(MyVideo* video){
     while(!video->proxy.EXIT){
         auto pkg = video->proxy.getVPkg();
         //EXIT被置位才会返回空包
-        if(!pkg) return;
+        if(!pkg) continue;
         while(video->proxy.isVFrameQFull() && !video->proxy.EXIT) std::this_thread::yield();
         if(!video->proxy.EXIT && pkg){
             video->decodeFrame(move(pkg));
@@ -29,15 +29,14 @@ int MyVideo::run(){
     init();
     auto videoTh = std::thread(videoThFunc, this);
     while(!proxy.EXIT){
-        while(!proxy.EXIT && SDL_PollEvent(&event)){
-            processEvents();
-        }
+        processEvents();
         // std::cout<<proxy.remainingTime<<std::endl;
         if(proxy.remainingTime>0) {
             std::this_thread::sleep_for(std::chrono::microseconds((int)(proxy.remainingTime*1e6)));
         }
         proxy.remainingTime = 0.01;
-        videoRefresh();
+        int ret = videoRefresh();
+        if(ret==-1) std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     videoTh.join();
     return 0;
@@ -79,14 +78,26 @@ int MyVideo::init(){
 
 int MyVideo::videoRefresh(){
     while(!proxy.EXIT){
-        nextFrameST = proxy.peekVFrame();
-        if(!nextFrameST){
-            std::cout<<"video lacking frame\n";
-            return -1;
+        while(!proxy.EXIT){
+            nextFrameST = proxy.peekVFrame();
+            if(!nextFrameST){
+                std::cout<<"video lacking frame\n";
+                return -1;
+            }
+            if(nextFrameST->serial==proxy.seekSerial) break;
+            else{
+                lastFrameST = nextFrameST;
+                proxy.popVFrameQ();
+            }
         }
-        auto lastFrameDur = calculateDur(nextFrameST->frame);
+        if(proxy.EXIT) return -1;
+        auto lastFrameDur = calculateDur(nextFrameST);
         auto delay = calculateDelay(lastFrameDur);
+        // std::cout<<delay<<std::endl;
         double curTime = av_gettime_relative()/1e6;
+        if(lastFrameST && lastFrameST->serial!=nextFrameST->serial){
+            videoCLK.systemTime = (double)nextFrameST->frame->pts*proxy.videoTimeBase;
+        }
         if(!proxy.EXIT && videoCLK.systemTime+delay<curTime){
             videoCLK.updateCur(proxy.videoTimeBase * nextFrameST->frame->pts);
             lastFrameST = nextFrameST;
@@ -142,13 +153,14 @@ void MyVideo::videoDisplay(AVFrame* frame){
     SDL_RenderPresent(renderer.get());
 }
 
-double MyVideo::calculateDur(AVFrame* frame){
+double MyVideo::calculateDur(std::shared_ptr<FrameST>& frameST){
+    auto frame = frameST->frame;
     if(!lastFrameST){
         if(frame->pts==NAN) return 0;
         else return proxy.videoTimeBase * frame->pts;
     }
     else if(lastFrameST->frame->pts == NAN) return proxy.videoTimeBase * frame->pts;
-    else if(lastFrameST->frame->pts > frame->pts) return 0;
+    else if(lastFrameST->frame->pts > frame->pts || frameST->serial!=lastFrameST->serial) return 0;
     else return proxy.videoTimeBase*(frame->pts - lastFrameST->frame->pts);
 }
 
@@ -173,14 +185,17 @@ void MyVideo::processEvents(){
     while(SDL_PollEvent(&event)){
         switch(event.type){
             case SDL_KEYDOWN:{
+                std::cout<<"entered SDL_KEYDOWN\n";
                 auto* keyEvent = reinterpret_cast<SDL_KeyboardEvent*>(&event);
                 if(keyEvent->keysym.sym==SDLK_SPACE){
                     
                 }
                 else if(keyEvent->keysym.sym==SDLK_LEFT){
-                    proxy.commitTask(demuxerTaskType::TYPE_SEEK, seekTaskST{5, demuxerTaskSeek::SEEK_BACKWARD_DURATION});
+                    std::cout<<"sending a left seek request\n";
+                    proxy.commitTask(demuxerTaskType::TYPE_SEEK, seekTaskST{-5, demuxerTaskSeek::SEEK_BACKWARD_DURATION});
                 }
                 else if(keyEvent->keysym.sym==SDLK_RIGHT){
+                    std::cout<<"sending a right seek request\n";
                     proxy.commitTask(demuxerTaskType::TYPE_SEEK, seekTaskST{5, demuxerTaskSeek::SEEK_FORWARD_DURATION});
                 }
                 break;

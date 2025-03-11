@@ -78,7 +78,7 @@ void MyAudio::decodeFrame(std::unique_ptr<PacketST, void(*)(PacketST*)>&& packet
     if(!packet->pkg || packet->serial!=proxy.seekSerial) return;
     proxy.aCodecMtx.lock();
     if((avcodec_send_packet(audioCodecCtx, packet->pkg)==0) && !proxy.EXIT){
-        proxy.aCodecMtx.lock();
+        proxy.aCodecMtx.unlock();
         int ret = 0;
         while(!proxy.EXIT){
             ret = avcodec_receive_frame(audioCodecCtx, decodedFrameST->frame);
@@ -93,10 +93,17 @@ void MyAudio::decodeFrame(std::unique_ptr<PacketST, void(*)(PacketST*)>&& packet
 }
 
 int MyAudio::editFrame(){
-    auto frameST = proxy.peekAFrame();
-    if(!frameST) return -1;
-    auto frame = frameST->frame;
-    if(!frame) return -1;
+    AVFrame* frame;
+    while(!proxy.EXIT){
+        auto frameST = proxy.peekAFrame();
+        if(!frameST) return -1;
+        frame = frameST->frame;
+        if(frameST->serial==proxy.seekSerial) break;
+        else{
+            proxy.popAFrameQ();
+        }
+    }
+    if(proxy.EXIT) return -1;
     int dataSize = av_samples_get_buffer_size(nullptr, 
                                               frame->ch_layout.nb_channels, 
                                               frame->nb_samples, 
