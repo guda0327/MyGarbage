@@ -76,12 +76,19 @@ FrameBuffer::FrameBuffer(){
 void MyAudio::decodeFrame(std::unique_ptr<PacketST, void(*)(PacketST*)>&& packet){
     if(!packet || !audioCodecCtx) return;
     if(!packet->pkg || packet->serial!=proxy.seekSerial) return;
+    proxy.aCodecMtx.lock();
     if((avcodec_send_packet(audioCodecCtx, packet->pkg)==0) && !proxy.EXIT){
-        while((avcodec_receive_frame(audioCodecCtx, decodedFrameST->frame)==0) && !proxy.EXIT){
+        proxy.aCodecMtx.lock();
+        int ret = 0;
+        while(!proxy.EXIT){
+            ret = avcodec_receive_frame(audioCodecCtx, decodedFrameST->frame);
+            proxy.aCodecMtx.unlock();
+            if(ret!=0) break;
             proxy.addAFrame(move(decodedFrameST));
             decodedFrameST.reset(new FrameST(av_frame_alloc(), static_cast<int>(proxy.seekSerial)));
         }
     }
+    else proxy.aCodecMtx.unlock();
     return;
 }
 

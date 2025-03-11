@@ -111,13 +111,20 @@ int MyVideo::videoRefresh(){
 
 void MyVideo::decodeFrame(std::unique_ptr<PacketST, void(*)(PacketST*)> packet){
     if(!packet || !videoCodecCtx) return;
-    if(!packet->pkg) return;
+    if(!packet->pkg || packet->serial!=proxy.seekSerial) return;
+    proxy.vCodecMtx.lock();
     if((avcodec_send_packet(videoCodecCtx, packet->pkg)==0) && !proxy.EXIT){
-        while((avcodec_receive_frame(videoCodecCtx, decodedFrameST->frame)==0) && !proxy.EXIT){
+        proxy.vCodecMtx.unlock();
+        while(!proxy.EXIT){
+            proxy.vCodecMtx.lock();
+            auto ret = avcodec_receive_frame(videoCodecCtx, decodedFrameST->frame);
+            proxy.vCodecMtx.unlock();
+            if(ret!=0) break;
             proxy.addVFrame(move(decodedFrameST));
             decodedFrameST.reset(new FrameST(av_frame_alloc(), static_cast<int>(proxy.seekSerial)));
         }
     }
+    else proxy.vCodecMtx.unlock();
     return;
 }
 
