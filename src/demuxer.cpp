@@ -73,7 +73,7 @@ int MyDemuxer::calculateSeekTS(int sec){
 
 void MyDemuxer::openInput(const std::string& fileName){
     auto fileCtxPtr = fileCtx.get();
-    avformat_open_input(&fileCtxPtr, "./videos/summer_rendering.mp4", nullptr, nullptr);
+    avformat_open_input(&fileCtxPtr, "http://localhost:8080/live/livestream.flv", nullptr, nullptr);
     avformat_find_stream_info(fileCtxPtr, nullptr);
 
     videoStreamIdx = av_find_best_stream(fileCtxPtr, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);

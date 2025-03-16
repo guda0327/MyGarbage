@@ -127,7 +127,7 @@ int MyAudio::editFrame(){
         resampledBuffer.size = dataSize;
     }
     if(frame->pts>=0){
-        audioCLK.tailPts = av_q2d(audioCodecCtx->time_base)*frame->pts + 
+        audioCLK.tailPts = proxy.audioTimeBase*frame->pts + 
                                  (double)realSample/obtainedSpec.freq;
     }
     proxy.popAFrameQ();
