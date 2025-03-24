@@ -111,6 +111,9 @@ class ResourceProxy{
     std::shared_ptr<AVCodecContext*> getAudioParCtx();
     //暂停
     std::atomic<int> STOP = 0;
+    //暂停的时候如果seek了，本标志位使得视频立即刷新一次
+    //本标志只有视频线程使用，因此不加锁
+    int forceToRefresh = 0;
     //退出
     std::atomic<int> EXIT = 0;
     //av_read_frame读完了

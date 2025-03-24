@@ -94,10 +94,19 @@ int MyVideo::videoRefresh(){
         double curTime = av_gettime_relative()/1e6;
         if(lastFrameST && lastFrameST->serial!=nextFrameST->serial){
             videoCLK.systemTime = curTime;
+            if(proxy.STOP) proxy.forceToRefresh = 1;
         }
         if(proxy.STOP){
-            logger.commit(LogStrategy::DEFAULT_FORMAT, "video", videoCLK);
-            videoDisplay(lastFrameST->frame);
+            if(proxy.forceToRefresh==0){
+                logger.commit(LogStrategy::DEFAULT_FORMAT, "video", videoCLK);
+                videoDisplay(lastFrameST->frame);
+            }
+            else{
+                videoCLK.updateCur(proxy.videoTimeBase * nextFrameST->frame->pts);
+                logger.commit(LogStrategy::DEFAULT_FORMAT, "video", videoCLK);
+                videoDisplay(nextFrameST->frame);
+                lastFrameST = nextFrameST;
+            }
             return 0;
         }
         auto lastFrameDur = calculateDur(nextFrameST);
