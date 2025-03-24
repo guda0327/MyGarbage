@@ -69,6 +69,10 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "future": "cpp",
-        "shared_mutex": "cpp"
+        "shared_mutex": "cpp",
+        "qtwidgets": "cpp",
+        "qapplication": "cpp",
+        "unordered_set": "cpp",
+        "source_location": "cpp"
     }
 }

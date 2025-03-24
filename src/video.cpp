@@ -91,14 +91,19 @@ int MyVideo::videoRefresh(){
             }
         }
         if(proxy.EXIT) return -1;
+        double curTime = av_gettime_relative()/1e6;
+        if(lastFrameST && lastFrameST->serial!=nextFrameST->serial){
+            videoCLK.systemTime = curTime;
+        }
+        if(proxy.STOP){
+            logger.commit(LogStrategy::DEFAULT_FORMAT, "video", videoCLK);
+            videoDisplay(lastFrameST->frame);
+            return 0;
+        }
         auto lastFrameDur = calculateDur(nextFrameST);
         auto delay = calculateDelay(lastFrameDur);
         // std::cout<<delay<<std::endl;
-        double curTime = av_gettime_relative()/1e6;
-        if(lastFrameST && lastFrameST->serial!=nextFrameST->serial){
-            videoCLK.systemTime = (double)nextFrameST->frame->pts*proxy.videoTimeBase;
-        }
-        if(!proxy.EXIT && videoCLK.systemTime+delay<curTime){
+        if(!proxy.EXIT && videoCLK.systemTime+delay<=curTime){
             videoCLK.updateCur(proxy.videoTimeBase * nextFrameST->frame->pts);
             lastFrameST = nextFrameST;
             proxy.popVFrameQ();
@@ -109,10 +114,16 @@ int MyVideo::videoRefresh(){
             continue;
         }
         else if(!proxy.EXIT){
-            videoCLK.updateCur(proxy.videoTimeBase * nextFrameST->frame->pts);
-            lastFrameST = nextFrameST;
+            // videoCLK.updateCur(proxy.videoTimeBase * nextFrameST->frame->pts);
+            // lastFrameST = nextFrameST;
+            // logger.commit(LogStrategy::DEFAULT_FORMAT, "video", videoCLK);
+            // videoDisplay(nextFrameST->frame);
+            // proxy.remainingTime = std::min(proxy.remainingTime,  videoCLK.systemTime + delay - curTime);
+
+            videoCLK.updateCur(proxy.videoTimeBase * lastFrameST->frame->pts);
+            // lastFrameST = nextFrameST;
             logger.commit(LogStrategy::DEFAULT_FORMAT, "video", videoCLK);
-            videoDisplay(nextFrameST->frame);
+            videoDisplay(lastFrameST->frame);
             proxy.remainingTime = std::min(proxy.remainingTime,  videoCLK.systemTime + delay - curTime);
             return 0;
         }
@@ -155,10 +166,7 @@ void MyVideo::videoDisplay(AVFrame* frame){
 
 double MyVideo::calculateDur(std::shared_ptr<FrameST>& frameST){
     auto frame = frameST->frame;
-    if(!lastFrameST){
-        if(frame->pts==NAN) return 0;
-        else return proxy.videoTimeBase * frame->pts;
-    }
+    if(!lastFrameST) return 0;
     else if(lastFrameST->frame->pts == NAN) return proxy.videoTimeBase * frame->pts;
     else if(lastFrameST->frame->pts > frame->pts || frameST->serial!=lastFrameST->serial) return 0;
     else return proxy.videoTimeBase*(frame->pts - lastFrameST->frame->pts);
@@ -188,7 +196,7 @@ void MyVideo::processEvents(){
                 std::cout<<"entered SDL_KEYDOWN\n";
                 auto* keyEvent = reinterpret_cast<SDL_KeyboardEvent*>(&event);
                 if(keyEvent->keysym.sym==SDLK_SPACE){
-                    
+                    proxy.STOP = !proxy.STOP;
                 }
                 else if(keyEvent->keysym.sym==SDLK_LEFT){
                     std::cout<<"sending a left seek request\n";

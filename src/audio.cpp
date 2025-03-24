@@ -42,6 +42,14 @@ int MyAudio::run(){
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             std::this_thread::yield();
         }
+        if(proxy.STOP){
+            SDL_PauseAudioDevice(*audioDevice, true);
+            while(proxy.STOP && !proxy.EXIT){
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::yield();
+            }
+        }
+        else SDL_PauseAudioDevice(*audioDevice, false);
         if(!proxy.EXIT && pkg){
             decodeFrame(move(pkg));
         }
@@ -170,7 +178,7 @@ void MyAudio::setSpec(SDL_AudioSpec& spec){
     spec.freq = 48000;
     spec.format = AUDIO_S16SYS;
     spec.channels = 2;
-    spec.samples = 1<<12;
+    spec.samples = 1<<13;
     spec.callback = SDLAudioCallback;
     spec.userdata = this;
 }

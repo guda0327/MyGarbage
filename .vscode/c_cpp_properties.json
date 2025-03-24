@@ -5,7 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/usr/include",
-                "/usr/local/include"
+                "/usr/local/include",
+                "~/Qt/6.9.0/gcc_64/include/"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang++",
